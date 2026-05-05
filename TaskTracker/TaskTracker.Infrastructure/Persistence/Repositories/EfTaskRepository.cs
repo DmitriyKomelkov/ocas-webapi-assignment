@@ -13,21 +13,15 @@ internal sealed class EfTaskRepository : ITaskRepository
         _db = db;
     }
 
-    public Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken ct) =>
-        _db.Tasks.FirstOrDefaultAsync(t => t.Id == id, ct);
+    public async Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken ct) =>
+        await _db.Tasks.FindAsync([id], ct);
 
     public async Task<IReadOnlyList<TaskItem>> ListAsync(CancellationToken ct) =>
         await _db.Tasks.AsNoTracking().ToListAsync(ct);
 
-    public async Task AddAsync(TaskItem task, CancellationToken ct)
-    {
-        await _db.Tasks.AddAsync(task, ct);
-    }
+    public void Add(TaskItem task) => _db.Tasks.Add(task);
 
-    public void Remove(TaskItem task)
-    {
-        _db.Tasks.Remove(task);
-    }
+    public void Remove(TaskItem task) => _db.Tasks.Remove(task);
 
     public Task<int> SaveChangesAsync(CancellationToken ct) => _db.SaveChangesAsync(ct);
 }

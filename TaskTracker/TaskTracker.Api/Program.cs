@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using FastEndpoints;
 using FastEndpoints.Swagger;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using TaskTracker.Api.Features.Tasks.Common;
@@ -10,21 +11,34 @@ using TaskTracker.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// --- Application & Infrastructure layers ---
 builder.Services
     .AddApplication()
     .AddInfrastructure(builder.Configuration);
 
+// --- Cross-cutting services ---
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddHealthChecks();
 
+builder.Services.AddHttpLogging(o =>
+{
+    o.LoggingFields = HttpLoggingFields.RequestMethod
+                    | HttpLoggingFields.RequestPath
+                    | HttpLoggingFields.ResponseStatusCode
+                    | HttpLoggingFields.Duration;
+    o.CombineLogs = true;
+});
+
+// --- JSON serialization (enums as strings on the wire) ---
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
+// --- HTTP layer: FastEndpoints + OpenAPI ---
 builder.Services.AddFastEndpoints();
 builder.Services.SwaggerDocument(o =>
 {
@@ -41,20 +55,29 @@ builder.Services.SwaggerDocument(o =>
 
 var app = builder.Build();
 
+// --- Startup tasks ---
 await ApplyMigrationsAsync(app);
 
+// --- Middleware pipeline ---
+// UseExceptionHandler turns uncaught exceptions into RFC 7807 ProblemDetails (DomainException
+// is handled separately by DomainExceptionHandler). UseStatusCodePages converts empty-body
+// status responses (e.g. 404 from Send.NotFoundAsync()) into ProblemDetails as well.
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+
+app.UseHttpLogging();
 
 app.UseHttpsRedirection();
 
 app.UseFastEndpoints(c =>
 {
     c.Serializer.Options.Converters.Add(new JsonStringEnumConverter());
+    c.Errors.UseProblemDetails();
 });
 
 app.MapHealthChecks("/health");
 
+// --- Development-only: Swagger JSON + Scalar UI + root redirect ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwaggerGen();
@@ -71,6 +94,7 @@ if (app.Environment.IsDevelopment())
 
 app.Run();
 
+// --- Local helpers ---
 static async Task ApplyMigrationsAsync(WebApplication app)
 {
     await using var scope = app.Services.CreateAsyncScope();
@@ -78,4 +102,6 @@ static async Task ApplyMigrationsAsync(WebApplication app)
     await db.Database.MigrateAsync();
 }
 
+// Required by WebApplicationFactory<Program> in TaskTracker.Api.IntegrationTests
+// to expose the auto-generated entry-point class as public.
 public partial class Program;

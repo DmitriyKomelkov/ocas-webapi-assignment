@@ -49,7 +49,7 @@ Api.IntegrationTests   ──► Api  (in-memory via WebApplicationFactory<Progr
 ```
 
 - `TaskTracker.Domain` — entities, value objects, domain rules, `DomainException`. **No outward references.**
-- `TaskTracker.Application` — use cases + contracts (e.g. `ITaskRepository`) that Infrastructure must satisfy. Per-operation handlers (CQRS-lite). Exposes `AddApplication()` on `IServiceCollection`.
+- `TaskTracker.Application` — use cases + contracts (e.g. `ITaskRepository`) that Infrastructure must satisfy. Per-operation handlers (CQRS-lite). Exposes `AddApplication()` on `IServiceCollection`. Note: this layer has a **deliberate** dependency on `Microsoft.Extensions.DependencyInjection.Abstractions` so that DI registration extensions can live next to the handlers. Strict "Application is pure" advocates would split that into a separate `Application.DependencyInjection` project — for this scope we accept the trade-off.
 - `TaskTracker.Infrastructure` — `TaskTrackerDbContext`, EF Core mappings, repository implementations. Exposes `AddInfrastructure(IConfiguration)`.
 - `TaskTracker.Api` — composition root. Wires `AddApplication()` + `AddInfrastructure(...)`. Hosts the HTTP server.
 - `TaskTracker.Domain.UnitTests` — fast unit tests on Domain rules.
@@ -58,7 +58,7 @@ Api.IntegrationTests   ──► Api  (in-memory via WebApplicationFactory<Progr
 ### Domain conventions
 
 - Entities have **private setters** and mutate only through methods that enforce invariants (e.g. `TaskItem.Update`, `TaskItem.ChangeStatus`). Don't expose public setters or anaemic models — invariants belong on the entity.
-- Validation that's a domain rule (e.g. "cannot be Done with empty title") lives in the entity and throws `DomainException`. Validation that's about request shape (max length, required) is duplicated in FE/FluentValidation at the API edge — defense in depth.
+- Validation that's a domain rule (e.g. title required, length bounds) lives in the entity and throws `DomainException`. The same shape rules are also enforced at the API edge via FluentValidation — defense in depth, with API validation always fired first so users get nice ProblemDetails responses.
 - Construct entities through static factories (`TaskItem.Create(...)`), not constructors.
 
 ### Application layer conventions
@@ -66,7 +66,7 @@ Api.IntegrationTests   ──► Api  (in-memory via WebApplicationFactory<Progr
 - One handler class per use case, in `Tasks/<Feature>/<Verb>Handler.cs`. Handlers are scoped, take `ITaskRepository` and any other contracts via ctor.
 - Commands/queries are `sealed record`s in the same folder.
 - Application-layer DTOs (`TaskDto`) are returned to API; API does not see Domain entities.
-- `ITaskRepository` exposes a small set of operations (`GetByIdAsync`, `ListAsync`, `AddAsync`, `Remove`, `SaveChangesAsync`) — no `IQueryable<T>` leakage.
+- `ITaskRepository` exposes a small set of operations (`GetByIdAsync`, `ListAsync`, `Add`, `Remove`, `SaveChangesAsync`) — no `IQueryable<T>` leakage. `Add` is intentionally synchronous: EF's `AddAsync` is only meaningful for stores with async value generators, and our IDs are domain-generated (`Guid.NewGuid()`).
 
 ### Infrastructure conventions
 
@@ -84,7 +84,7 @@ Api.IntegrationTests   ──► Api  (in-memory via WebApplicationFactory<Progr
 - 404 from endpoints uses `Send.NotFoundAsync()`; `UseStatusCodePages()` then converts the empty body into ProblemDetails. Don't write 404 ProblemDetails by hand.
 - `Program.cs` ends with `public partial class Program;` — required so `WebApplicationFactory<Program>` can see the entry point. Don't remove it.
 - `TimeProvider.System` is registered as a singleton — inject `TimeProvider` instead of using `DateTime.UtcNow` in domain/application code so tests can swap in `FakeTimeProvider`.
-- Middleware order: `UseExceptionHandler` → `UseStatusCodePages` → `UseHttpsRedirection` → `UseFastEndpoints` → `MapHealthChecks`. Don't reorder unless you know why.
+- Middleware order: `UseExceptionHandler` → `UseStatusCodePages` → `UseHttpLogging` → `UseHttpsRedirection` → `UseFastEndpoints` → `MapHealthChecks`. Don't reorder unless you know why. `UseHttpLogging` is **after** the error-handling middleware (so the middleware itself is covered by exception handling) but **before** anything that mutates the request, so we still see the original method/path.
 
 ### Integration tests pattern
 
@@ -97,7 +97,6 @@ Api.IntegrationTests   ──► Api  (in-memory via WebApplicationFactory<Progr
 - `global.json` pins SDK to `10.0.203` with `rollForward=latestFeature`.
 - `.editorconfig` is detailed and authoritative — Allman braces, `var` for built-ins, no `this.` qualification, `_camelCase` private fields, `s_` static prefix, etc. Follow it rather than guessing.
 - Test projects suppress `CA1707` via `<NoWarn>` to allow xUnit's `Method_Scenario_Result` naming with underscores.
-- `NuGetAuditSuppress` in `Directory.Packages.props` covers two `System.Security.Cryptography.Xml` advisories that arrive transitively through EF.Design. The package is design-time-only (`PrivateAssets=all`), never shipped at runtime, so the advisories are not actually exploitable here. Re-evaluate once a patched 10.x is published.
 
 ### Adding a new feature (typical path)
 

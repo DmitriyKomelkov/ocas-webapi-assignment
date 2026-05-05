@@ -2,7 +2,7 @@ using FastEndpoints;
 
 namespace TaskTracker.Api.Features.Diagnostics;
 
-internal sealed class PingEndpoint : EndpointWithoutRequest<string>
+internal sealed class PingEndpoint : EndpointWithoutRequest
 {
     public override void Configure()
     {
@@ -13,6 +13,6 @@ internal sealed class PingEndpoint : EndpointWithoutRequest<string>
 
     public override Task HandleAsync(CancellationToken ct)
     {
-        return Send.OkAsync("pong", ct);
+        return Send.StringAsync("pong", contentType: "text/plain", cancellation: ct);
     }
 }

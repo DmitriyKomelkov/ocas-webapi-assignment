@@ -16,7 +16,8 @@ internal sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasMaxLength(TaskItem.MaxTitleLength)
             .IsRequired();
 
-        builder.Property(t => t.Description);
+        builder.Property(t => t.Description)
+            .HasMaxLength(TaskItem.MaxDescriptionLength);
 
         builder.Property(t => t.Status)
             .HasConversion<string>()

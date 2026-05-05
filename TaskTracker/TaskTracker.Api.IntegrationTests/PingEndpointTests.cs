@@ -1,14 +1,13 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace TaskTracker.Api.IntegrationTests;
 
-public class PingEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class PingEndpointTests : IClassFixture<TaskTrackerWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly TaskTrackerWebApplicationFactory _factory;
 
-    public PingEndpointTests(WebApplicationFactory<Program> factory)
+    public PingEndpointTests(TaskTrackerWebApplicationFactory factory)
     {
         _factory = factory;
     }
@@ -21,7 +20,8 @@ public class PingEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         var response = await client.GetAsync("/ping");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/plain", response.Content.Headers.ContentType?.MediaType);
         var body = await response.Content.ReadAsStringAsync();
-        Assert.Equal("pong", body.Trim('"'));
+        Assert.Equal("pong", body);
     }
 }

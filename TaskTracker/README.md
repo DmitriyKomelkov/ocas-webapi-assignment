@@ -59,6 +59,8 @@ Always available:
 - `PUT /tasks/{id}`
 - `DELETE /tasks/{id}`
 
+All non-2xx responses use the **RFC 7807 ProblemDetails** format with `Content-Type: application/problem+json`. This includes 400 (validation errors come back as `ValidationProblemDetails` with a per-field `errors` map), 404 (not found, including unknown routes), and 500 (uncaught exceptions). Domain rule violations are translated to 400 ProblemDetails by `DomainExceptionHandler`.
+
 ## Tests
 
 ```bash

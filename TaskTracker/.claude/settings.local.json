@@ -14,7 +14,8 @@
       "Bash(dotnet run *)",
       "Bash(curl -fsS http://localhost:5108/health)",
       "Bash(curl -sS -X POST http://localhost:5108/tasks -H \"Content-Type: application/json\" -d '{\"title\":\"Buy milk\",\"description\":\"2% organic\",\"status\":\"Todo\",\"dueDate\":null}' -i)",
-      "Bash(curl -sS http://localhost:5108/tasks)"
+      "Bash(curl -sS http://localhost:5108/tasks)",
+      "Bash(find D:\\\\OCAS\\\\TaskTracker *)"
     ]
   }
 }

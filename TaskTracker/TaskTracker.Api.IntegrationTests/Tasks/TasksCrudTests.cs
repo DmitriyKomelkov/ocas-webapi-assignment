@@ -111,7 +111,7 @@ public class TasksCrudTests : IClassFixture<TaskTrackerWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Create_with_blank_title_returns_400()
+    public async Task Create_with_blank_title_returns_400_problem_details()
     {
         using var client = _factory.CreateClient();
 
@@ -119,6 +119,12 @@ public class TasksCrudTests : IClassFixture<TaskTrackerWebApplicationFactory>
         var response = await client.PostAsJsonAsync("/tasks", payload, JsonOptions);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.Equal(400, problem.GetProperty("status").GetInt32());
+        Assert.True(problem.TryGetProperty("errors", out var errors));
+        Assert.True(errors.ValueKind != JsonValueKind.Undefined);
     }
 
     [Fact]

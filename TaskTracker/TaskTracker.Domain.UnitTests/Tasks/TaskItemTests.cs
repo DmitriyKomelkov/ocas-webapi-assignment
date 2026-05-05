@@ -95,7 +95,7 @@ public class TaskItemTests
     }
 
     [Fact]
-    public void ChangeStatus_to_Done_after_title_set_to_whitespace_is_unreachable_via_public_API()
+    public void Update_with_whitespace_title_throws_and_leaves_task_unchanged()
     {
         var task = TaskItem.Create("Valid");
 
@@ -108,5 +108,13 @@ public class TaskItemTests
 
         Assert.Equal("Valid", task.Title);
         Assert.Equal(TaskItemStatus.Todo, task.Status);
+    }
+
+    [Fact]
+    public void Create_with_description_longer_than_max_throws()
+    {
+        var tooLong = new string('x', TaskItem.MaxDescriptionLength + 1);
+
+        Assert.Throws<DomainException>(() => TaskItem.Create(title: "ok", description: tooLong));
     }
 }

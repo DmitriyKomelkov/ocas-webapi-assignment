@@ -13,6 +13,10 @@ internal sealed class CreateTaskValidator : Validator<CreateTaskRequest>
             .MaximumLength(TaskItem.MaxTitleLength)
                 .WithMessage($"Title must be {TaskItem.MaxTitleLength} characters or fewer.");
 
+        RuleFor(x => x.Description)
+            .MaximumLength(TaskItem.MaxDescriptionLength)
+                .WithMessage($"Description must be {TaskItem.MaxDescriptionLength} characters or fewer.");
+
         RuleFor(x => x.Status).IsInEnum();
     }
 }

@@ -19,7 +19,7 @@ public sealed class CreateTaskHandler
             status: command.Status,
             dueDate: command.DueDate);
 
-        await _repository.AddAsync(task, ct);
+        _repository.Add(task);
         await _repository.SaveChangesAsync(ct);
 
         return TaskDto.FromEntity(task);

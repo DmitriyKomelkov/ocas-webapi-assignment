@@ -4,7 +4,8 @@ namespace TaskTracker.Domain.Tasks;
 
 public sealed class TaskItem
 {
-    public const int MaxTitleLength = 100;
+    public static readonly int MaxTitleLength = 100;
+    public static readonly int MaxDescriptionLength = 2000;
 
     public Guid Id { get; private set; }
     public string Title { get; private set; } = string.Empty;
@@ -18,9 +19,9 @@ public sealed class TaskItem
     {
         Id = id;
         SetTitle(title);
-        Description = description;
+        SetDescription(description);
         DueDate = dueDate;
-        SetStatus(status);
+        Status = status;
     }
 
     public static TaskItem Create(
@@ -39,14 +40,14 @@ public sealed class TaskItem
         TaskItemStatus status)
     {
         SetTitle(title);
-        Description = description;
+        SetDescription(description);
         DueDate = dueDate;
-        SetStatus(status);
+        Status = status;
     }
 
     public void ChangeStatus(TaskItemStatus newStatus)
     {
-        SetStatus(newStatus);
+        Status = newStatus;
     }
 
     private void SetTitle(string title)
@@ -64,13 +65,13 @@ public sealed class TaskItem
         Title = title;
     }
 
-    private void SetStatus(TaskItemStatus newStatus)
+    private void SetDescription(string? description)
     {
-        if (newStatus == TaskItemStatus.Done && string.IsNullOrWhiteSpace(Title))
+        if (description is { Length: var len } && len > MaxDescriptionLength)
         {
-            throw new DomainException("Cannot mark a task as Done while its title is empty.");
+            throw new DomainException($"Task description must be {MaxDescriptionLength} characters or fewer.");
         }
 
-        Status = newStatus;
+        Description = description;
     }
 }
