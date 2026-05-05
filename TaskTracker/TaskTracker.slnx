@@ -1,0 +1,27 @@
+<Solution>
+  <Folder Name="/10.Solution/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/20.Domain/">
+    <Project Path="TaskTracker.Domain/TaskTracker.Domain.csproj" />
+  </Folder>
+  <Folder Name="/30.Application/">
+    <Project Path="TaskTracker.Application/TaskTracker.Application.csproj" />
+  </Folder>
+  <Folder Name="/40.Infrastructure/">
+    <Project Path="TaskTracker.Infrastructure/TaskTracker.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/50.Api/">
+    <Project Path="TaskTracker.Api/TaskTracker.Api.csproj" />
+  </Folder>
+  <Folder Name="/60.Tests/">
+    <Project Path="TaskTracker.Domain.UnitTests/TaskTracker.Domain.UnitTests.csproj" />
+    <Project Path="TaskTracker.Api.IntegrationTests/TaskTracker.Api.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
