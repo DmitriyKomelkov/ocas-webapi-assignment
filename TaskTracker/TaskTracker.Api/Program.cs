@@ -1,8 +1,12 @@
+using System.Text.Json.Serialization;
 using FastEndpoints;
 using FastEndpoints.Swagger;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using TaskTracker.Api.Features.Tasks.Common;
 using TaskTracker.Application;
 using TaskTracker.Infrastructure;
+using TaskTracker.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +17,13 @@ builder.Services
 builder.Services.AddSingleton(TimeProvider.System);
 
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddHealthChecks();
+
+builder.Services.ConfigureHttpJsonOptions(o =>
+{
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 builder.Services.AddFastEndpoints();
 builder.Services.SwaggerDocument(o =>
@@ -26,16 +36,22 @@ builder.Services.SwaggerDocument(o =>
         s.Description = "Small .NET Web API for a Task Tracker";
     };
     o.ShortSchemaNames = true;
+    o.AutoTagPathSegmentIndex = 0;
 });
 
 var app = builder.Build();
+
+await ApplyMigrationsAsync(app);
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
 app.UseHttpsRedirection();
 
-app.UseFastEndpoints();
+app.UseFastEndpoints(c =>
+{
+    c.Serializer.Options.Converters.Add(new JsonStringEnumConverter());
+});
 
 app.MapHealthChecks("/health");
 
@@ -54,5 +70,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.Run();
+
+static async Task ApplyMigrationsAsync(WebApplication app)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<TaskTrackerDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 public partial class Program;

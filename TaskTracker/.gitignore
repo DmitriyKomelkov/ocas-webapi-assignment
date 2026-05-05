@@ -90,6 +90,12 @@ appsettings.Local.json
 appsettings.*.Local.json
 secrets.json
 
+# Local SQLite (dev DB created on startup)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
 # Misc
 *.log
 *.tmp

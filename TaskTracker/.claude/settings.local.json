@@ -6,7 +6,15 @@
       "Bash(dotnet --list-sdks)",
       "Bash(dotnet restore *)",
       "Bash(dotnet build *)",
-      "Bash(dotnet test *)"
+      "Bash(dotnet test *)",
+      "Bash(dotnet ef *)",
+      "Bash(dotnet new *)",
+      "Bash(dotnet tool *)",
+      "Bash(rm -f TaskTracker.Api/tasktracker.db)",
+      "Bash(dotnet run *)",
+      "Bash(curl -fsS http://localhost:5108/health)",
+      "Bash(curl -sS -X POST http://localhost:5108/tasks -H \"Content-Type: application/json\" -d '{\"title\":\"Buy milk\",\"description\":\"2% organic\",\"status\":\"Todo\",\"dueDate\":null}' -i)",
+      "Bash(curl -sS http://localhost:5108/tasks)"
     ]
   }
 }

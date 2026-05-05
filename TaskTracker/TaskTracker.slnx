@@ -22,6 +22,7 @@
   </Folder>
   <Folder Name="/60.Tests/">
     <Project Path="TaskTracker.Domain.UnitTests/TaskTracker.Domain.UnitTests.csproj" />
+    <File Path="postman/TaskTracker.postman_collection.json" />
     <Project Path="TaskTracker.Api.IntegrationTests/TaskTracker.Api.IntegrationTests.csproj" />
   </Folder>
 </Solution>
