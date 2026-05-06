@@ -26,9 +26,18 @@ public class TaskItemTests
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("\t\n")]
-    public void Create_with_blank_title_throws(string title)
+    public void Create_with_empty_or_whitespace_title_succeeds_when_status_is_not_Done(string title)
     {
-        Assert.Throws<DomainException>(() => TaskItem.Create(title));
+        var task = TaskItem.Create(title);
+
+        Assert.Equal(title, task.Title);
+        Assert.Equal(TaskItemStatus.Todo, task.Status);
+    }
+
+    [Fact]
+    public void Create_with_null_title_throws()
+    {
+        Assert.Throws<DomainException>(() => TaskItem.Create(title: null!));
     }
 
     [Fact]
@@ -47,6 +56,15 @@ public class TaskItemTests
         var task = TaskItem.Create(atLimit);
 
         Assert.Equal(atLimit, task.Title);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Create_to_Done_with_blank_title_throws(string title)
+    {
+        Assert.Throws<DomainException>(() =>
+            TaskItem.Create(title: title, status: TaskItemStatus.Done));
     }
 
     [Fact]
@@ -94,8 +112,19 @@ public class TaskItemTests
         Assert.Equal(TaskItemStatus.Done, task.Status);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ChangeStatus_to_Done_with_blank_title_throws(string title)
+    {
+        var task = TaskItem.Create(title);
+
+        Assert.Throws<DomainException>(() => task.ChangeStatus(TaskItemStatus.Done));
+        Assert.Equal(TaskItemStatus.Todo, task.Status);
+    }
+
     [Fact]
-    public void Update_with_whitespace_title_throws_and_leaves_task_unchanged()
+    public void Update_to_Done_with_whitespace_title_throws_and_leaves_task_unchanged()
     {
         var task = TaskItem.Create("Valid");
 

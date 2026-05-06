@@ -11,7 +11,7 @@ internal sealed class UpdateTaskValidator : Validator<UpdateTaskRequest>
         RuleFor(x => x.Id).NotEmpty();
 
         RuleFor(x => x.Title)
-            .NotEmpty().WithMessage("Title is required.")
+            .NotNull().WithMessage("Title is required.")
             .MaximumLength(TaskItem.MaxTitleLength)
                 .WithMessage($"Title must be {TaskItem.MaxTitleLength} characters or fewer.");
 

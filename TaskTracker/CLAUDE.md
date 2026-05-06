@@ -86,9 +86,20 @@ Api.IntegrationTests   ──► Api  (in-memory via WebApplicationFactory<Progr
 - `TimeProvider.System` is registered as a singleton — inject `TimeProvider` instead of using `DateTime.UtcNow` in domain/application code so tests can swap in `FakeTimeProvider`.
 - Middleware order: `UseExceptionHandler` → `UseStatusCodePages` → `UseHttpLogging` → `UseHttpsRedirection` → `UseFastEndpoints` → `MapHealthChecks`. Don't reorder unless you know why. `UseHttpLogging` is **after** the error-handling middleware (so the middleware itself is covered by exception handling) but **before** anything that mutates the request, so we still see the original method/path.
 
+### Testing strategy
+
+Two-level pyramid by design:
+
+- **Domain unit tests** (`TaskTracker.Domain.UnitTests`) — cover entity invariants and rule transitions thoroughly. This is where business logic lives, so this is where the densest coverage belongs.
+- **API integration tests** (`TaskTracker.Api.IntegrationTests`) — `WebApplicationFactory<Program>` against SQLite `:memory:`, exercise the full slice (validator → endpoint → handler → EF → DB). One pass through `POST /tasks` covers the create handler transitively.
+
+There is **no Application unit-test project**, and that's deliberate. Today's handlers are pass-through orchestration (`Create entity → repo.Add → SaveChanges → return DTO`), so a unit test on them would mostly assert mock setup ("`Add` was called", "`SaveChangesAsync` was called") — testing implementation, not behaviour, and duplicating what the integration test already verifies. Add `TaskTracker.Application.UnitTests` only when a handler grows real logic worth isolating: branching, application-level rules ("user can have at most N active tasks"), retry/circuit-breaker logic, multi-repository orchestration, or behaviours triggered by `TimeProvider` that integration tests can't conveniently fake.
+
 ### Integration tests pattern
 
 `TaskTrackerWebApplicationFactory` overrides the registered `DbContextOptions<TaskTrackerDbContext>` to use a single shared `SqliteConnection("DataSource=:memory:")` per fixture. Migrations run on startup against this in-memory DB, so each test class gets a fresh schema. Use `IClassFixture<TaskTrackerWebApplicationFactory>` to share the factory across tests in a class; create separate test classes when state must be isolated.
+
+**All integration test classes must use `TaskTrackerWebApplicationFactory`, not stock `WebApplicationFactory<Program>`** — the stock one would honour `appsettings.json` and write to the real `tasktracker.db` file, racing with dev runs and concurrent test workers.
 
 ### Build-wide settings
 

@@ -139,16 +139,17 @@
       ]
     },
     {
-      "name": "Validation samples (expect 400)",
+      "name": "Error samples (expect 400 ProblemDetails)",
+      "description": "Three different ways to get a 400: FluentValidation null check, FluentValidation max-length check, and the domain rule that blocks Done with empty/whitespace title (handled by DomainExceptionHandler).",
       "item": [
         {
-          "name": "Create with blank title",
+          "name": "Create with null title (validator)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"   \",\n  \"status\": \"Todo\"\n}"
+              "raw": "{\n  \"title\": null,\n  \"status\": \"Todo\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/tasks",
@@ -158,13 +159,29 @@
           }
         },
         {
-          "name": "Create with title > 100 chars",
+          "name": "Create with title > 100 chars (validator)",
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"status\": \"Todo\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"]
+            }
+          }
+        },
+        {
+          "name": "Create with empty title and Done status (domain rule)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"status\": \"Done\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/tasks",

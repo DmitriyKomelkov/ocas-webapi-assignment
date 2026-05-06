@@ -73,6 +73,8 @@ Single test:
 dotnet test --filter "FullyQualifiedName~MyTestName"
 ```
 
+Two-level pyramid: **domain unit tests** for entity invariants and **API integration tests** (`WebApplicationFactory<Program>` + SQLite `:memory:`) for the full HTTP slice. Application handlers are intentionally not unit-tested — they're pass-through orchestration today, so integration tests cover them transitively. A separate Application unit-test project becomes worthwhile only when a handler grows real logic (branching, application-level rules, multi-repository orchestration).
+
 ## Postman
 
 A ready-to-use Postman collection is at `postman/TaskTracker.postman_collection.json`. It includes all CRUD endpoints, a few validation samples, and a `{{baseUrl}}` variable defaulting to `http://localhost:5108`. The "Create task" request stashes the new id into `{{taskId}}` so the next requests in the folder pick it up automatically.
@@ -87,3 +89,12 @@ dotnet tool run dotnet-ef migrations add <Name> \
     --startup-project TaskTracker.Api \
     --output-dir Persistence/Migrations
 ```
+
+## Deliberate non-choices
+
+A few common .NET libraries are intentionally **not** part of this solution. They are good tools, but at this scale they add ceremony without paying for themselves:
+
+- **Object-to-object mapper** (AutoMapper, Mapster, Mapperly). `TaskDto.FromEntity(...)` is a single explicit line — the compiler keeps it in sync with the entity, navigation is one click, and there's no reflection or DI registration to learn. A mapper starts to earn its keep when an aggregate has many fields and several DTO variants per use case.
+- **Mediator library** (MediatR, Mediator). Endpoints inject handlers directly. We don't currently have cross-cutting concerns that would benefit from a pipeline of behaviours, and FastEndpoints already provides validators and pre/post processors at the HTTP edge.
+
+Both decisions are easy to reverse later — if the project grows enough to need either, swapping them in is a localized change.

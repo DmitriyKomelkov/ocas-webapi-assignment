@@ -15,22 +15,22 @@ public sealed class TaskItem
 
     private TaskItem() { }
 
-    private TaskItem(Guid id, string title, string? description, TaskItemStatus status, DateTimeOffset? dueDate)
-    {
-        Id = id;
-        SetTitle(title);
-        SetDescription(description);
-        DueDate = dueDate;
-        Status = status;
-    }
-
     public static TaskItem Create(
         string title,
         string? description = null,
         TaskItemStatus status = TaskItemStatus.Todo,
         DateTimeOffset? dueDate = null)
     {
-        return new TaskItem(Guid.NewGuid(), title, description, status, dueDate);
+        EnsureValid(title, description, status);
+
+        return new TaskItem
+        {
+            Id = Guid.NewGuid(),
+            Title = title,
+            Description = description,
+            Status = status,
+            DueDate = dueDate,
+        };
     }
 
     public void Update(
@@ -39,20 +39,30 @@ public sealed class TaskItem
         DateTimeOffset? dueDate,
         TaskItemStatus status)
     {
-        SetTitle(title);
-        SetDescription(description);
+        EnsureValid(title, description, status);
+
+        Title = title;
+        Description = description;
         DueDate = dueDate;
         Status = status;
     }
 
     public void ChangeStatus(TaskItemStatus newStatus)
     {
+        EnsureCanTransitionTo(newStatus, currentTitle: Title);
         Status = newStatus;
     }
 
-    private void SetTitle(string title)
+    private static void EnsureValid(string title, string? description, TaskItemStatus status)
     {
-        if (string.IsNullOrWhiteSpace(title))
+        EnsureValidTitle(title);
+        EnsureValidDescription(description);
+        EnsureCanTransitionTo(status, currentTitle: title);
+    }
+
+    private static void EnsureValidTitle(string title)
+    {
+        if (title is null)
         {
             throw new DomainException("Task title is required.");
         }
@@ -61,17 +71,21 @@ public sealed class TaskItem
         {
             throw new DomainException($"Task title must be {MaxTitleLength} characters or fewer.");
         }
-
-        Title = title;
     }
 
-    private void SetDescription(string? description)
+    private static void EnsureValidDescription(string? description)
     {
         if (description is { Length: var len } && len > MaxDescriptionLength)
         {
             throw new DomainException($"Task description must be {MaxDescriptionLength} characters or fewer.");
         }
+    }
 
-        Description = description;
+    private static void EnsureCanTransitionTo(TaskItemStatus status, string currentTitle)
+    {
+        if (status == TaskItemStatus.Done && string.IsNullOrWhiteSpace(currentTitle))
+        {
+            throw new DomainException("Cannot mark a task as Done while its title is empty or whitespace.");
+        }
     }
 }

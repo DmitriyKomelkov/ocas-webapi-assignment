@@ -9,7 +9,7 @@ internal sealed class CreateTaskValidator : Validator<CreateTaskRequest>
     public CreateTaskValidator()
     {
         RuleFor(x => x.Title)
-            .NotEmpty().WithMessage("Title is required.")
+            .NotNull().WithMessage("Title is required.")
             .MaximumLength(TaskItem.MaxTitleLength)
                 .WithMessage($"Title must be {TaskItem.MaxTitleLength} characters or fewer.");
 

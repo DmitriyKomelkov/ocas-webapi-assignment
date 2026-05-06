@@ -111,24 +111,7 @@ public class TasksCrudTests : IClassFixture<TaskTrackerWebApplicationFactory>
     }
 
     [Fact]
-    public async Task Create_with_blank_title_returns_400_problem_details()
-    {
-        using var client = _factory.CreateClient();
-
-        var payload = new { title = "  ", description = (string?)null, status = "Todo", dueDate = (DateTimeOffset?)null };
-        var response = await client.PostAsJsonAsync("/tasks", payload, JsonOptions);
-
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
-
-        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
-        Assert.Equal(400, problem.GetProperty("status").GetInt32());
-        Assert.True(problem.TryGetProperty("errors", out var errors));
-        Assert.True(errors.ValueKind != JsonValueKind.Undefined);
-    }
-
-    [Fact]
-    public async Task Create_with_too_long_title_returns_400()
+    public async Task Create_with_too_long_title_returns_400_validation_problem_details()
     {
         using var client = _factory.CreateClient();
 
@@ -142,6 +125,53 @@ public class TasksCrudTests : IClassFixture<TaskTrackerWebApplicationFactory>
         var response = await client.PostAsJsonAsync("/tasks", payload, JsonOptions);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.Equal(400, problem.GetProperty("status").GetInt32());
+        Assert.True(problem.TryGetProperty("errors", out _));
+    }
+
+    [Fact]
+    public async Task Create_with_empty_title_and_status_Done_returns_400_problem_details()
+    {
+        // FluentValidation lets this through (empty title is allowed by spec; Done is a valid enum).
+        // The handler then tries to construct TaskItem, the domain rejects it with DomainException,
+        // and DomainExceptionHandler translates that to 400 ProblemDetails.
+        using var client = _factory.CreateClient();
+
+        var payload = new
+        {
+            title = "",
+            description = (string?)null,
+            status = "Done",
+            dueDate = (DateTimeOffset?)null,
+        };
+        var response = await client.PostAsJsonAsync("/tasks", payload, JsonOptions);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        Assert.Equal(400, problem.GetProperty("status").GetInt32());
+        Assert.Equal("Domain rule violated", problem.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task Create_with_empty_title_and_status_Todo_succeeds()
+    {
+        using var client = _factory.CreateClient();
+
+        var payload = new
+        {
+            title = "",
+            description = (string?)null,
+            status = "Todo",
+            dueDate = (DateTimeOffset?)null,
+        };
+        var response = await client.PostAsJsonAsync("/tasks", payload, JsonOptions);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
     }
 
     private sealed record TaskResponse(
